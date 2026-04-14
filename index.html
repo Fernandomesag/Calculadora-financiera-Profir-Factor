@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Profit Factor Pro</title>
+    <!-- Tailwind CSS para el diseño -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React y ReactDOM desde CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel para procesar JSX en el navegador -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #00adc0; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-[#f8fafc]">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
+        
+        // Importamos los iconos de Lucide (vía CDN usan un objeto global)
+        const { 
+            Calculator, Users, Clock, Target, Plus, Building2, 
+            HelpCircle, X, PieChart, Lightbulb, BookOpen, 
+            ArrowRight, TrendingUp, ShieldCheck, Edit3, 
+            ChevronDown, ChevronUp, Info, Trash2 
+        } = lucide;
+
+        const App = () => {
+            const brandColor = "#00adc0";
+
+            // --- Estado ---
+            const [currency, setCurrency] = useState('COP'); 
+            const [useCustomPrice, setUseCustomPrice] = useState(false);
+            const [customPriceInput, setCustomPriceInput] = useState(0);
+            const [openGuide, setOpenGuide] = useState(false);
+            const [activeTooltip, setActiveTooltip] = useState(null);
+            
+            const [formData, setFormData] = useState({
+                salaryDesired: 15000000,
+                monthlyRevenueGoal: 40000000,
+                hoursPerMonth: 160,
+                taxPercentage: 19,
+                marginDesired: 25,
+                serviceHours: 12, 
+                adsPercentage: 10
+            });
+
+            const [fixedExpenses, setFixedExpenses] = useState([
+                { id: 1, category: 'Legal', name: 'Seguridad Social (Salud+Pensión+ARL)', amount: 1800000, active: true },
+                { id: 2, category: 'Software', name: 'Software Contable / Facturación', amount: 150000, active: true },
+                { id: 3, category: 'Software', name: 'Zoom / Google Workspace / Calendly', amount: 250000, active: true },
+                { id: 4, category: 'Operación', name: 'Plan Celular + Internet', amount: 220000, active: true },
+                { id: 5, category: 'Bancario', name: 'Comisiones / 4x1000 / Cuotas Manejo', amount: 80000, active: true },
+                { id: 6, category: 'Marketing', name: 'CRM (Hubspot/ActiveCampaign)', amount: 180000, active: true },
+                { id: 7, category: 'Legal', name: 'Contador Mensual / Asesoría', amount: 450000, active: true }
+            ]);
+
+            const [commissionTeam, setCommissionTeam] = useState([
+                { id: 1, role: 'Closer de Ventas', percentage: 10, active: true },
+                { id: 2, role: 'Appointment Setter', percentage: 5, active: false }
+            ]);
+
+            const [newRoleName, setNewRoleName] = useState('');
+            const [newRolePercentage, setNewRolePercentage] = useState('');
+
+            // --- Manejo de Gastos Fijos ---
+            const handleUpdateExpense = (id, field, value) => {
+                setFixedExpenses(prev => prev.map(exp => 
+                    exp.id === id ? { ...exp, [field]: value } : exp
+                ));
+            };
+
+            // --- Manejo de Equipo a Comisión ---
+            const addCommissionRole = () => {
+                if (!newRoleName || !newRolePercentage) return;
+                const newRole = {
+                    id: Date.now(),
+                    role: newRoleName,
+                    percentage: parseFloat(newRolePercentage),
+                    active: true
+                };
+                setCommissionTeam([...commissionTeam, newRole]);
+                setNewRoleName('');
+                setNewRolePercentage('');
+            };
+
+            const removeCommissionRole = (id) => {
+                setCommissionTeam(commissionTeam.filter(role => role.id !== id));
+            };
+
+            // --- Lógica de Cambio de Divisa ---
+            const handleCurrencyChange = (newCurrency) => {
+                if (newCurrency === currency) return;
+                const rate = 4000;
+                const factor = newCurrency === 'USD' ? (1 / rate) : rate;
+
+                setFormData(prev => ({
+                    ...prev,
+                    salaryDesired: prev.salaryDesired * factor,
+                    monthlyRevenueGoal: prev.monthlyRevenueGoal * factor
+                }));
+
+                setFixedExpenses(prev => prev.map(exp => ({
+                    ...exp,
+                    amount: exp.amount * factor
+                })));
+
+                if (customPriceInput > 0) setCustomPriceInput(customPriceInput * factor);
+                setCurrency(newCurrency);
+            };
+
+            const formatValue = (val) => {
+                return new Intl.NumberFormat(currency === 'COP' ? 'es-CO' : 'en-US', {
+                    style: 'currency',
+                    currency: currency,
+                    minimumFractionDigits: currency === 'USD' ? 2 : 0,
+                    maximumFractionDigits: currency === 'USD' ? 2 : 0
+                }).format(val);
+            };
+
+            // --- Cálculos ---
+            const results = useMemo(() => {
+                const totalFixedMonthly = fixedExpenses.reduce((acc, curr) => curr.active ? acc + curr.amount : acc, 0);
+                const hourlyRateFixed = (formData.salaryDesired + totalFixedMonthly) / formData.hoursPerMonth;
+                const deliveryCost = hourlyRateFixed * formData.serviceHours;
+                
+                const commissionPercent = commissionTeam.reduce((acc, curr) => curr.active ? acc + curr.percentage : acc, 0);
+                const adsPercent = formData.adsPercentage;
+                const profitPercentGoal = formData.marginDesired;
+                
+                const totalVariablePercent = (commissionPercent + adsPercent + profitPercentGoal) / 100;
+                const safeDivisor = totalVariablePercent >= 1 ? 0.01 : (1 - totalVariablePercent);
+                const suggestedPriceBeforeTax = deliveryCost / safeDivisor;
+                
+                let priceBeforeTax = suggestedPriceBeforeTax;
+                if (useCustomPrice && customPriceInput > 0) {
+                    priceBeforeTax = currency === 'COP' 
+                        ? customPriceInput / (1 + (formData.taxPercentage / 100)) 
+                        : customPriceInput;
+                }
+
+                const commissionAmount = priceBeforeTax * (commissionPercent / 100);
+                const adsAmount = priceBeforeTax * (adsPercent / 100);
+                const taxAmount = priceBeforeTax * (formData.taxPercentage / 100);
+                const finalPrice = priceBeforeTax + taxAmount;
+                
+                const profitAmount = priceBeforeTax - deliveryCost - commissionAmount - adsAmount;
+                const realProfitPercent = priceBeforeTax > 0 ? (profitAmount / priceBeforeTax) * 100 : 0;
+                const salesToGoal = priceBeforeTax > 0 ? Math.ceil(formData.monthlyRevenueGoal / priceBeforeTax) : 0;
+
+                return {
+                    totalFixedMonthly, hourlyRateFixed, deliveryCost, commissionAmount,
+                    adsAmount, profitAmount, priceBeforeTax, taxAmount, finalPrice,
+                    salesToGoal, realProfitPercent, suggestedPriceBeforeTax
+                };
+            }, [formData, fixedExpenses, commissionTeam, currency, useCustomPrice, customPriceInput]);
+
+            const SectionInfo = ({ title, info, example, specialNote }) => (
+                <div className="relative inline-block ml-2 group">
+                    <button 
+                        onMouseEnter={() => setActiveTooltip(title)}
+                        onMouseLeave={() => setActiveTooltip(null)}
+                        className="text-slate-300 hover:text-[#00adc0] transition-colors"
+                    >
+                        <i data-lucide="help-circle" style={{width: '14px', height: '14px'}}></i>
+                    </button>
+                    {activeTooltip === title && (
+                        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-slate-900 text-white p-5 rounded-2xl shadow-2xl border border-slate-700">
+                            <p className="text-[11px] font-bold text-[#00adc0] uppercase mb-2 tracking-widest">{title}</p>
+                            <p className="text-[11px] leading-relaxed mb-3 text-slate-300">{info}</p>
+                            {specialNote && (
+                                <div className="mb-3 p-2 bg-white/5 rounded-lg border border-white/10">
+                                    <p className="text-[10px] text-amber-400 font-bold mb-1 italic">💡 Nota importante:</p>
+                                    <p className="text-[10px] text-slate-400 leading-tight">{specialNote}</p>
+                                </div>
+                            )}
+                            <div className="pt-3 border-t border-slate-700">
+                                <p className="text-[10px] text-[#00adc0] font-bold uppercase tracking-widest mb-1">En la práctica:</p>
+                                <p className="text-[10px] italic text-slate-400">{example}</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+
+            // Re-ejecutar iconos de Lucide al renderizar
+            useEffect(() => {
+                lucide.createIcons();
+            }, [activeTooltip, openGuide, fixedExpenses, commissionTeam, useCustomPrice]);
+
+            return (
+                <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-800 p-4 md:p-8">
+                    {/* Header */}
+                    <div className="max-w-6xl mx-auto mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div>
+                            <h1 className="text-3xl md:text-4xl font-black mb-2 flex items-center gap-3 tracking-tight text-slate-900">
+                                <i data-lucide="calculator" style={{width: '32px', height: '32px', color: brandColor}}></i>
+                                <span>Profit <span style={{ color: brandColor }}>Factor</span></span>
+                            </h1>
+                            <p className="text-slate-500 font-medium">Cobra lo que mereces y deja de ser rehén de tu negocio.</p>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-slate-200">
+                            <button onClick={() => handleCurrencyChange('COP')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${currency === 'COP' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:bg-slate-50'}`}>COP ($)</button>
+                            <button onClick={() => handleCurrencyChange('USD')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${currency === 'USD' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:bg-slate-50'}`}>USD (U$S)</button>
+                        </div>
+                    </div>
+
+                    {/* GUÍA COMPLETA */}
+                    <div className="max-w-6xl mx-auto mb-8">
+                        <button onClick={() => setOpenGuide(!openGuide)} className="w-full bg-slate-900 p-4 rounded-3xl flex items-center justify-between text-white hover:bg-slate-800 transition-all border-b-4 border-[#00adc0] group">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-[#00adc0] p-2 rounded-xl group-hover:scale-110 transition-transform">
+                                    <i data-lucide="book-open"></i>
+                                </div>
+                                <div className="text-left">
+                                    <h3 className="text-sm font-black uppercase tracking-widest">¿Cómo usar esta calculadora?</h3>
+                                    <p className="text-[10px] text-slate-400">Haz clic aquí para entender la lógica detrás de tus números.</p>
+                                </div>
+                            </div>
+                            {openGuide ? <i data-lucide="chevron-up"></i> : <i data-lucide="chevron-down"></i>}
+                        </button>
+                        {openGuide && (
+                            <div className="mt-2 bg-white p-6 rounded-3xl border border-slate-200 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 shadow-xl">
+                                <div className="space-y-2">
+                                    <span className="text-2xl font-black text-[#00adc0]/20">01</span>
+                                    <h4 className="text-xs font-black uppercase">Fija tu Meta</h4>
+                                    <p className="text-xs text-slate-500">No solo facturación. Define cuánto quieres retirar para ti cada mes.</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <span className="text-2xl font-black text-[#00adc0]/20">02</span>
+                                    <h4 className="text-xs font-black uppercase">Costos de Verdad</h4>
+                                    <p className="text-xs text-slate-500">Si no incluyes el contador o el software, los pagas de tu bolsillo.</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <span className="text-2xl font-black text-[#00adc0]/20">03</span>
+                                    <h4 className="text-xs font-black uppercase">Vende con Equipo</h4>
+                                    <p className="text-xs text-slate-500">El costo del vendedor debe estar en el precio del servicio.</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <span className="text-2xl font-black text-[#00adc0]/20">04</span>
+                                    <h4 className="text-xs font-black uppercase">Mide tu Salud</h4>
+                                    <p className="text-xs text-slate-500">Valida si lo que cobras hoy te está quebrando lentamente.</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-1 space-y-6">
+                            {/* SECCIÓN 1: METAS */}
+                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-sm font-black flex items-center gap-2 text-slate-400 uppercase tracking-widest">
+                                        <i data-lucide="target" style={{color: brandColor, width: '18px'}}></i> Metas de Negocio
+                                    </h2>
+                                </div>
+                                <div className="space-y-5">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Facturación Meta / Mes</label>
+                                        <input type="number" value={formData.monthlyRevenueGoal} onChange={(e) => setFormData({...formData, monthlyRevenueGoal: parseFloat(e.target.value) || 0})} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-[#00adc0] outline-none font-bold" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tu Sueldo (Lo que retiras)</label>
+                                        <input type="number" value={formData.salaryDesired} onChange={(e) => setFormData({...formData, salaryDesired: parseFloat(e.target.value) || 0})} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-[#00adc0] outline-none font-bold" />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Horas Libres / Mes</label>
+                                            <input type="number" value={formData.hoursPerMonth} onChange={(e) => setFormData({...formData, hoursPerMonth: parseFloat(e.target.value) || 0})} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Horas / Cliente</label>
+                                            <input type="number" value={formData.serviceHours} onChange={(e) => setFormData({...formData, serviceHours: parseFloat(e.target.value) || 0})} className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* SECCIÓN 2: COSTOS */}
+                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-sm font-black flex items-center gap-2 text-slate-400 uppercase tracking-widest">
+                                        <i data-lucide="pie-chart" style={{color: brandColor, width: '18px'}}></i> Costos
+                                    </h2>
+                                </div>
+                                
+                                <div className="mb-6">
+                                    <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1 mb-3"><i data-lucide="building-2" style={{width: '14px'}}></i> GASTOS FIJOS</span>
+                                    <div className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar mb-4">
+                                        {fixedExpenses.map(expense => (
+                                            <div key={expense.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2 flex-1">
+                                                        <input type="checkbox" checked={expense.active} onChange={() => setFixedExpenses(fixedExpenses.map(e => e.id === expense.id ? {...e, active: !e.active} : e))} className="w-4 h-4 accent-[#00adc0]" />
+                                                        <input type="text" value={expense.name} onChange={(e) => handleUpdateExpense(expense.id, 'name', e.target.value)} className="text-[11px] font-medium text-slate-600 bg-transparent border-none focus:ring-1 focus:ring-[#00adc0] rounded px-1 w-full outline-none" />
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 pl-6">
+                                                    <input type="number" value={expense.amount} onChange={(e) => handleUpdateExpense(expense.id, 'amount', parseFloat(e.target.value) || 0)} className="text-[10px] font-black w-full bg-white border border-slate-200 rounded-lg px-2 py-1 outline-none" />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="pt-6 border-t border-slate-100 space-y-5">
+                                    <div className="space-y-2">
+                                        {commissionTeam.map(member => (
+                                            <div key={member.id} className="group flex items-center justify-between p-3 bg-slate-900 text-white rounded-2xl overflow-hidden">
+                                                <div className="flex items-center gap-3">
+                                                    <input type="checkbox" checked={member.active} onChange={() => setCommissionTeam(commissionTeam.map(m => m.id === member.id ? {...m, active: !m.active} : m))} className="accent-[#00adc0]" />
+                                                    <span className="text-[11px] font-bold">{member.role}</span>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-[11px] font-black text-[#00adc0]">{member.percentage}%</span>
+                                                    <button onClick={() => removeCommissionRole(member.id)} className="text-rose-400"><i data-lucide="trash-2" style={{width: '14px'}}></i></button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Ads (%)</label>
+                                            <input type="number" value={formData.adsPercentage} onChange={(e) => setFormData({...formData, adsPercentage: parseFloat(e.target.value) || 0})} className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl outline-none font-bold" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Utilidad (%)</label>
+                                            <input type="number" value={formData.marginDesired} onChange={(e) => setFormData({...formData, marginDesired: parseFloat(e.target.value) || 0})} className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl outline-none font-bold" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* PRECIO MANUAL */}
+                            <div className={`p-6 rounded-3xl border transition-all ${useCustomPrice ? 'bg-amber-50 border-amber-200 shadow-lg' : 'bg-white border-slate-100'}`}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className={`text-sm font-black uppercase tracking-widest ${useCustomPrice ? 'text-amber-700' : 'text-slate-400'}`}>Validar Mi Precio</h2>
+                                    <button onClick={() => setUseCustomPrice(!useCustomPrice)} className={`text-[10px] font-black px-4 py-1.5 rounded-full ${useCustomPrice ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                        {useCustomPrice ? 'MODO VALIDACIÓN' : 'MODO SUGERENCIA'}
+                                    </button>
+                                </div>
+                                {useCustomPrice && (
+                                    <div>
+                                        <input type="number" value={customPriceInput} onChange={(e) => setCustomPriceInput(parseFloat(e.target.value) || 0)} className="w-full px-4 py-3 bg-white border border-amber-200 rounded-2xl font-bold text-amber-900 shadow-inner text-lg" placeholder="¿Cuánto cobras hoy?" />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* RESULTADOS */}
+                        <div className="lg:col-span-2 space-y-6">
+                            <div className={`p-8 md:p-12 rounded-[2.5rem] text-white shadow-2xl border-b-8 transition-all duration-500 ${useCustomPrice ? 'bg-slate-800 border-amber-500' : 'bg-slate-900 border-[#00adc0]'}`}>
+                                <p className={`${useCustomPrice ? 'text-amber-400' : 'text-[#00adc0]'} font-black uppercase tracking-[0.3em] text-[10px] mb-4`}>
+                                    {useCustomPrice ? 'VALIDANDO PRECIO ACTUAL' : 'PRECIO SUGERIDO PARA RENTABILIDAD'}
+                                </p>
+                                <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8 mb-8">
+                                    <span className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-none">{formatValue(results.finalPrice)}</span>
+                                    <div className="text-center md:text-left">
+                                        <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">{currency === 'COP' ? 'Incluye IVA 19%' : 'Neto por Servicio'}</p>
+                                        <p className={`${results.profitAmount > 0 ? 'text-emerald-400' : 'text-rose-400'} text-sm font-bold flex items-center gap-2 mt-1 justify-center md:justify-start`}>
+                                            <i data-lucide="shield-check" style={{width: '16px'}}></i> {results.profitAmount > 0 ? 'Lógica Rentable' : 'Pérdida Detectada'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-slate-700">
+                                    <div><p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Subtotal s/ IVA</p><p className="text-md font-black">{formatValue(results.priceBeforeTax)}</p></div>
+                                    <div><p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Comisiones</p><p className="text-md font-black text-rose-400">{formatValue(results.commissionAmount)}</p></div>
+                                    <div><p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Inversión Ads</p><p className="text-md font-black text-blue-400">{formatValue(results.adsAmount)}</p></div>
+                                    <div><p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Utilidad Real</p><p className={`text-md font-black ${results.profitAmount > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{formatValue(results.profitAmount)}</p></div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+                                    <h3 className="text-lg font-black mb-2">Salud del Margen</h3>
+                                    <div className="space-y-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-3 rounded-2xl text-white ${results.realProfitPercent < formData.marginDesired ? 'bg-amber-500' : 'bg-emerald-500'}`}><i data-lucide="trending-up"></i></div>
+                                            <div><p className="text-[10px] font-bold text-slate-400 uppercase">Margen Real</p><p className="text-xl font-black">{results.realProfitPercent.toFixed(2)}%</p></div>
+                                        </div>
+                                        <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                                            <div className={`h-full transition-all duration-1000 ${results.realProfitPercent < formData.marginDesired ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${Math.max(0, Math.min(results.realProfitPercent, 100))}%` }}></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-xl">
+                                    <h3 className="text-lg font-black mb-4 flex items-center gap-2"><i data-lucide="lightbulb" style={{color: brandColor}}></i> Operación</h3>
+                                    <div className="space-y-4">
+                                        <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+                                            <p className="text-[10px] text-slate-400 font-bold mb-1 uppercase">Ventas para Meta</p>
+                                            <p className="text-lg font-black text-[#00adc0]">{results.salesToGoal} Clientes</p>
+                                        </div>
+                                        <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+                                            <p className="text-[10px] text-slate-400 font-bold mb-1 uppercase">Ocupación de tu Tiempo</p>
+                                            <p className={`text-lg font-black ${((results.salesToGoal * formData.serviceHours) / formData.hoursPerMonth) > 1 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                                {((results.salesToGoal * formData.serviceHours) / formData.hoursPerMonth * 100).toFixed(0)}%
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
