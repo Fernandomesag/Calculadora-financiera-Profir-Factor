@@ -198,7 +198,7 @@
                                 className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors py-2 px-3 rounded-lg border border-slate-200 bg-white"
                             >
                                 <i data-lucide="help-circle" className="w-4 h-4"></i>
-                                {openGuide ? "Cerrar Guía" : "Cómo funciona"}
+                                {openGuide ? "Cerrar Tutorial" : "Cómo funciona"}
                             </button>
                             <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
                                 <button onClick={() => handleCurrencyChange('COP')} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold ${currency === 'COP' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400'}`}>COP</button>
@@ -207,24 +207,79 @@
                         </div>
                     </div>
 
-                    {/* Guía */}
+                    {/* Guía Tutorial Profunda */}
                     {openGuide && (
-                        <div className="max-w-6xl mx-auto mb-8 bg-white p-6 rounded-3xl border border-slate-200 shadow-xl grid grid-cols-1 md:grid-cols-4 gap-6 animate-fade-in">
-                            <div className="space-y-2">
-                                <h4 className="font-black text-[#00adc0] uppercase text-[10px]">01. El Sueldo</h4>
-                                <p className="text-[11px] text-slate-600 leading-relaxed">Tu pago no es "lo que sobre". Es un costo fijo que el negocio debe cubrir obligatoriamente.</p>
+                        <div className="max-w-6xl mx-auto mb-8 bg-white p-8 md:p-10 rounded-[3rem] border border-slate-200 shadow-2xl animate-fade-in space-y-10">
+                            <div className="border-b border-slate-100 pb-6 text-center md:text-left">
+                                <h3 className="text-2xl font-black uppercase italic" style={{color: brandColor}}>Guía Tutorial: El Arte de cobrar para ganar</h3>
+                                <p className="text-slate-500 text-xs font-bold uppercase mt-2">No es solo llenar celdas, es entender por qué tu negocio no crece.</p>
                             </div>
-                            <div className="space-y-2">
-                                <h4 className="font-black text-[#00adc0] uppercase text-[10px]">02. Tu Hora</h4>
-                                <p className="text-[11px] text-slate-600 leading-relaxed">Calculamos el costo de tu tiempo operativo para saber cuánto cuesta realmente entregar tu servicio.</p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black italic shadow-lg">1</div>
+                                        <h4 className="font-black text-slate-900 uppercase text-xs tracking-widest">Metas: El GPS del Negocio</h4>
+                                    </div>
+                                    <div className="pl-12 space-y-3">
+                                        <p className="text-[12px] text-slate-600 leading-relaxed italic font-medium">
+                                            <strong>Sueldo Deseado:</strong> Lo que quieres ganar como especialista. <br/>
+                                            <span className="text-[10px] text-emerald-600 font-bold uppercase">Efecto:</span> Si subes este valor, el <strong>Precio Sugerido</strong> aumentará automáticamente para garantizar que tu esfuerzo sea remunerado.
+                                        </p>
+                                        <p className="text-[12px] text-slate-600 leading-relaxed italic font-medium">
+                                            <strong>Margen Deseado:</strong> Es el ahorro del negocio. <br/>
+                                            <span className="text-[10px] text-emerald-600 font-bold uppercase">Efecto:</span> Entre más alto, más protegido estarás contra imprevistos, pero mayor será el precio final.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black italic shadow-lg">2</div>
+                                        <h4 className="font-black text-slate-900 uppercase text-xs tracking-widest">Gastos Fijos: El Costo de Existir</h4>
+                                    </div>
+                                    <div className="pl-12 space-y-3">
+                                        <p className="text-[12px] text-slate-600 leading-relaxed italic font-medium">
+                                            Aquí pones lo que pagas sí o sí, vendas o no. <br/>
+                                            <span className="text-[10px] text-rose-500 font-bold uppercase">KPI Crítico:</span> Al ajustar estos valores, verás cómo cambia el <strong>Valor de tu Hora</strong>. Si tus gastos fijos son altos, tu hora se encarece y necesitas clientes de mayor ticket.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black italic shadow-lg">3</div>
+                                        <h4 className="font-black text-slate-900 uppercase text-xs tracking-widest">Tiempo: La Moneda Real</h4>
+                                    </div>
+                                    <div className="pl-12 space-y-3">
+                                        <p className="text-[12px] text-slate-600 leading-relaxed italic font-medium">
+                                            <strong>Horas p/ Cliente:</strong> No solo la sesión, cuenta el tiempo de preparación. <br/>
+                                            <span className="text-[10px] text-amber-500 font-bold uppercase">KPI Crítico:</span> Si este número es alto, tu <strong>Ocupación de Agenda</strong> subirá. Si llega al 100%, estás en el techo de cristal: no puedes ganar más a menos que subas el precio.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black italic shadow-lg">4</div>
+                                        <h4 className="font-black text-slate-900 uppercase text-xs tracking-widest">Variables: El Motor de Crecimiento</h4>
+                                    </div>
+                                    <div className="pl-12 space-y-3">
+                                        <p className="text-[12px] text-slate-600 leading-relaxed italic font-medium">
+                                            Comisiones (equipo) e Inversión en Ads. <br/>
+                                            <span className="text-[10px] text-blue-500 font-bold uppercase">KPI Crítico:</span> Mira el <strong>Máx x Cliente (CAC)</strong>. Es lo que puedes "quemar" en publicidad para traer un cliente sin perder dinero. Si es muy bajo, tu marketing será ineficiente.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <h4 className="font-black text-[#00adc0] uppercase text-[10px]">03. El Equipo</h4>
-                                <p className="text-[11px] text-slate-600 leading-relaxed">Vendedores y setters se pagan con el margen del producto, nunca de tu bolsillo personal.</p>
-                            </div>
-                            <div className="space-y-2">
-                                <h4 className="font-black text-[#00adc0] uppercase text-[10px]">04. El Margen</h4>
-                                <p className="text-[11px] text-slate-600 leading-relaxed">Ese 25-30% es lo que permite que el negocio crezca, se reinvierta y sea predecible.</p>
+
+                            <div className="bg-slate-900 p-8 rounded-[2rem] border-l-8 border-[#00adc0] space-y-4">
+                                <h4 className="text-white font-black uppercase text-xs tracking-[0.2em] italic">El Experimento de Oro</h4>
+                                <p className="text-slate-400 text-[11px] leading-relaxed">
+                                    Dale al botón <strong>"Validar mi precio"</strong> y pon lo que cobras HOY. Mira el cuadro de <strong>"Salud del Negocio"</strong>. 
+                                    Si la Utilidad Real es menor al 15%, estás en zona de peligro (autoempleo mal pagado). 
+                                    Si la Ocupación de Agenda pasa del 100%, estás quebrado de tiempo.
+                                </p>
                             </div>
                         </div>
                     )}
