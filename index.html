@@ -55,10 +55,13 @@
                 adsPercentage: 10
             });
 
+            // Gastos fijos típicos para profesionales independientes/asesores
             const [fixedExpenses, setFixedExpenses] = useState([
-                { id: 1, name: 'Seguridad Social', amount: 1800000, active: true },
-                { id: 2, name: 'Software y Herramientas', amount: 400000, active: true },
-                { id: 3, name: 'Marketing y CRM', amount: 180000, active: true }
+                { id: 1, name: 'Seguridad Social / Salud', amount: 1800000, active: true },
+                { id: 2, name: 'Suscripciones Software (Canva, Zoom, CRM)', amount: 450000, active: true },
+                { id: 3, name: 'Asistente Virtual / Freelance', amount: 1200000, active: true },
+                { id: 4, name: 'Oficina / Co-working', amount: 800000, active: true },
+                { id: 5, name: 'Formación y Libros', amount: 300000, active: true }
             ]);
 
             const [commissionTeam, setCommissionTeam] = useState([
@@ -81,6 +84,12 @@
                 }]);
                 setNewExpenseName('');
                 setNewExpenseAmount('');
+            };
+
+            const updateExpenseAmount = (id, newAmount) => {
+                setFixedExpenses(fixedExpenses.map(e => 
+                    e.id === id ? { ...e, amount: parseFloat(newAmount) || 0 } : e
+                ));
             };
 
             const addCommissionRole = () => {
@@ -165,7 +174,7 @@
             const InfoIcon = ({ text }) => (
                 <div className="relative group inline-block ml-1">
                     <i data-lucide="info" className="w-3 h-3 text-slate-400 cursor-help"></i>
-                    <div className="tooltip-box absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-[10px] rounded-lg shadow-xl z-50 leading-tight">
+                    <div className="tooltip-box absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-[10px] rounded-lg shadow-xl z-50 leading-tight font-normal normal-case">
                         {text}
                         <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-800"></div>
                     </div>
@@ -173,14 +182,14 @@
             );
 
             return (
-                <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8 animate-fade-in">
+                <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8 animate-fade-in font-inter">
                     {/* Header */}
                     <div className="max-w-6xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div className="flex-1">
-                            <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
-                                Calculadora financiera de rentabilidad <span style={{ color: brandColor }}>Profit Factor</span>
+                            <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase italic">
+                                Calculadora <span style={{ color: brandColor }}>Profit Factor</span>
                             </h1>
-                            <p className="text-slate-500 font-medium text-xs mt-1 italic">Para profesionales que quieren un negocio, no un autoempleo agotador.</p>
+                            <p className="text-slate-500 font-medium text-xs mt-1 italic uppercase tracking-wider">Para profesionales que quieren un negocio, no un autoempleo agotador.</p>
                         </div>
                         
                         <div className="flex items-center gap-4">
@@ -257,22 +266,30 @@
                                 <h2 className="text-xs font-black uppercase text-slate-400 tracking-widest mb-6 flex items-center">
                                     <i data-lucide="layout" className="w-4 mr-2" style={{color: brandColor}}></i> Gastos Fijos
                                 </h2>
-                                <div className="space-y-3 mb-6 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                <div className="space-y-3 mb-6 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                                     {fixedExpenses.map(exp => (
-                                        <div key={exp.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl group">
-                                            <div className="flex items-center gap-2">
-                                                <input type="checkbox" checked={exp.active} onChange={() => setFixedExpenses(fixedExpenses.map(e => e.id === exp.id ? {...e, active: !e.active} : e))} className="w-4 h-4 accent-[#00adc0]" />
-                                                <span className="text-[11px] font-medium text-slate-600">{exp.name}</span>
+                                        <div key={exp.id} className="p-3 bg-slate-50 rounded-xl group transition-all">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <input type="checkbox" checked={exp.active} onChange={() => setFixedExpenses(fixedExpenses.map(e => e.id === exp.id ? {...e, active: !e.active} : e))} className="w-4 h-4 accent-[#00adc0]" />
+                                                    <span className="text-[11px] font-black text-slate-600 uppercase italic">{exp.name}</span>
+                                                </div>
+                                                <button onClick={() => setFixedExpenses(fixedExpenses.filter(e => e.id !== exp.id))} className="text-rose-400 opacity-0 group-hover:opacity-100 transition-all"><i data-lucide="x" className="w-3"></i></button>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[10px] font-black">{formatValue(exp.amount)}</span>
-                                                <button onClick={() => setFixedExpenses(fixedExpenses.filter(e => e.id !== exp.id))} className="opacity-0 group-hover:opacity-100 text-rose-400 transition-all"><i data-lucide="x" className="w-3"></i></button>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{currency === 'COP' ? '$' : 'USD'}</span>
+                                                <input 
+                                                    type="number" 
+                                                    value={exp.amount} 
+                                                    onChange={(e) => updateExpenseAmount(exp.id, e.target.value)} 
+                                                    className="w-full pl-8 p-1.5 text-xs bg-white border border-slate-200 rounded-lg font-bold outline-[#00adc0]" 
+                                                />
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                                 <div className="space-y-2 pt-4 border-t border-slate-100">
-                                    <input type="text" placeholder="Nuevo gasto" value={newExpenseName} onChange={(e) => setNewExpenseName(e.target.value)} className="w-full p-2 text-xs bg-slate-50 rounded-lg outline-[#00adc0]" />
+                                    <input type="text" placeholder="Otro gasto (Ej: Contador)" value={newExpenseName} onChange={(e) => setNewExpenseName(e.target.value)} className="w-full p-2 text-xs bg-slate-50 rounded-lg outline-[#00adc0]" />
                                     <div className="flex gap-2">
                                         <input type="number" placeholder="Monto" value={newExpenseAmount} onChange={(e) => setNewExpenseAmount(e.target.value)} className="w-full p-2 text-xs bg-slate-50 rounded-lg outline-[#00adc0]" />
                                         <button onClick={addFixedExpense} className="bg-slate-900 text-white px-4 rounded-lg text-xs font-bold">+</button>
@@ -286,7 +303,7 @@
                                 </h2>
                                 <div className="space-y-2 mb-4">
                                     <div>
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center mb-1">Inversión Ads (%) <InfoIcon text="% destinado a pauta." /></label>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center mb-1">Inversión Ads (%) <InfoIcon text="% destinado a pauta (Facebook/Google Ads)." /></label>
                                         <input type="number" value={formData.adsPercentage} onChange={(e) => setFormData({...formData, adsPercentage: parseFloat(e.target.value) || 0})} className="w-full p-2 text-xs bg-slate-50 rounded-lg outline-[#00adc0] font-bold" />
                                     </div>
                                 </div>
@@ -317,7 +334,7 @@
                                 <div className="flex justify-between items-start mb-6">
                                     <div>
                                         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#00adc0]">Precio Sugerido para Rentabilidad</p>
-                                        <h2 className="text-5xl md:text-7xl font-black tracking-tighter mt-2">{formatValue(results.finalPrice)}</h2>
+                                        <h2 className="text-5xl md:text-7xl font-black tracking-tighter mt-2 italic">{formatValue(results.finalPrice)}</h2>
                                     </div>
                                     <button onClick={() => { setUseCustomPrice(!useCustomPrice); setCustomPriceInput(results.finalPrice); }} className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${useCustomPrice ? 'bg-amber-500 text-white shadow-lg' : 'bg-white/10 text-white/50 hover:bg-white/20'}`}>
                                         {useCustomPrice ? 'Modo: Validación' : 'Validar mi precio'}
@@ -326,7 +343,7 @@
 
                                 {useCustomPrice && (
                                     <div className="mb-8 bg-white/5 p-4 rounded-2xl border border-white/10 animate-fade-in">
-                                        <label className="text-[9px] font-bold text-amber-400 uppercase">¿Cuánto cobras actualmente?</label>
+                                        <label className="text-[9px] font-bold text-amber-400 uppercase italic">¿Cuánto cobras actualmente por este servicio?</label>
                                         <input type="number" value={customPriceInput} onChange={(e) => setCustomPriceInput(parseFloat(e.target.value) || 0)} className="w-full bg-transparent text-2xl font-black outline-none border-b border-amber-500/30 py-2" />
                                     </div>
                                 )}
@@ -341,7 +358,7 @@
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                                    <h3 className="text-sm font-black uppercase tracking-widest mb-6">Salud del Negocio</h3>
+                                    <h3 className="text-sm font-black uppercase tracking-widest mb-6 italic">Salud del Negocio</h3>
                                     <div className="flex items-center gap-4 mb-4">
                                         <div className={`p-4 rounded-2xl text-white ${results.realProfitPercent < 15 ? 'bg-rose-500' : results.realProfitPercent < formData.marginDesired ? 'bg-amber-500' : 'bg-emerald-500'}`}>
                                             <i data-lucide="heart-pulse"></i>
@@ -362,29 +379,29 @@
                                         </div>
                                         <div>
                                             <p className="text-[9px] font-bold text-slate-400 uppercase">Fondo de Paz (3m)</p>
-                                            <p className="text-lg font-black">{formatValue(results.runway3Months)}</p>
+                                            <p className="text-lg font-black italic">{formatValue(results.runway3Months)}</p>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-xl">
-                                    <h3 className="text-sm font-black uppercase tracking-widest mb-6 text-[#00adc0]">Capacidad y CAC</h3>
+                                    <h3 className="text-sm font-black uppercase tracking-widest mb-6 text-[#00adc0] italic">Capacidad y CAC</h3>
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/10">
-                                            <span className="text-[10px] font-bold uppercase text-slate-400">Valor de tu Hora <InfoIcon text="Costo por hora para cubrir sueldo y gastos." /></span>
-                                            <span className="text-xl font-black text-amber-400">{formatValue(results.hourlyRateFixed)}</span>
+                                            <span className="text-[10px] font-bold uppercase text-slate-400 flex items-center">Valor de tu Hora <InfoIcon text="Lo que te cuesta cada hora operativa para cubrir tu sueldo y gastos fijos." /></span>
+                                            <span className="text-xl font-black text-amber-400 italic">{formatValue(results.hourlyRateFixed)}</span>
                                         </div>
                                         <div className="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/10">
-                                            <span className="text-[10px] font-bold uppercase text-slate-400">Máx x Cliente (CAC)</span>
-                                            <span className="text-xl font-black text-blue-400">{formatValue(results.maxCAC)}</span>
+                                            <span className="text-[10px] font-bold uppercase text-slate-400 flex items-center">Máx x Cliente (CAC) <InfoIcon text="Es el Costo de Adquisición de Cliente máximo permitido. Es decir, cuánto puedes 'gastar' en publicidad para conseguir un cliente sin tocar tu sueldo ni tu margen de ganancia." /></span>
+                                            <span className="text-xl font-black text-blue-400 italic">{formatValue(results.maxCAC)}</span>
                                         </div>
                                         <div className="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/10">
                                             <span className="text-[10px] font-bold uppercase text-slate-400">Ventas para Meta</span>
-                                            <span className="text-xl font-black">{results.salesToGoal} Clientes</span>
+                                            <span className="text-xl font-black italic">{results.salesToGoal} Clientes</span>
                                         </div>
                                         <div className="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/10">
                                             <span className="text-[10px] font-bold uppercase text-slate-400">Ocupación Agenda</span>
-                                            <span className={`text-xl font-black ${results.capacityUtilization > 1 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                            <span className={`text-xl font-black italic ${results.capacityUtilization > 1 ? 'text-rose-400' : 'text-emerald-400'}`}>
                                                 {(results.capacityUtilization * 100).toFixed(0)}%
                                             </span>
                                         </div>
@@ -401,7 +418,7 @@
                                 <h3 className="text-2xl font-black text-slate-900 flex items-center gap-2 italic">
                                     <i data-lucide="zap" style={{color: brandColor}}></i> Análisis de Rentabilidad y Recomendaciones
                                 </h3>
-                                <p className="text-slate-500 text-sm mt-1">Hoja de ruta personalizada según tus números.</p>
+                                <p className="text-slate-500 text-sm mt-1 uppercase font-bold tracking-tight">Hoja de ruta personalizada según tus números.</p>
                             </div>
                             <div className="bg-slate-50 px-4 py-2 rounded-2xl">
                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Nivel de Riesgo</span>
@@ -416,8 +433,8 @@
                                 <div className="bg-white w-10 h-10 rounded-xl flex items-center justify-center shadow-sm">
                                     <i data-lucide="dollar-sign" className="text-slate-900 w-5"></i>
                                 </div>
-                                <h4 className="text-xs font-black uppercase tracking-wider">Estrategia de Precios</h4>
-                                <p className="text-xs text-slate-600 leading-relaxed">
+                                <h4 className="text-xs font-black uppercase tracking-wider italic">Estrategia de Precios</h4>
+                                <p className="text-xs text-slate-600 leading-relaxed font-medium">
                                     {results.realProfitPercent < 15 
                                         ? "Tu precio actual está matando tu flujo de caja. Necesitas subir precios al menos un 30% o reducir drásticamente el tiempo de entrega."
                                         : results.realProfitPercent < formData.marginDesired
@@ -430,8 +447,8 @@
                                 <div className="bg-white w-10 h-10 rounded-xl flex items-center justify-center shadow-sm">
                                     <i data-lucide="clock-3" className="text-slate-900 w-5"></i>
                                 </div>
-                                <h4 className="text-xs font-black uppercase tracking-wider">Eficiencia Operativa</h4>
-                                <p className="text-xs text-slate-600 leading-relaxed">
+                                <h4 className="text-xs font-black uppercase tracking-wider italic">Eficiencia Operativa</h4>
+                                <p className="text-xs text-slate-600 leading-relaxed font-medium">
                                     {results.capacityUtilization > 1 
                                         ? "Eres rehén de tu negocio. Necesitas estandarizar procesos o contratar ayuda operativa urgente para cumplir tus metas."
                                         : results.capacityUtilization > 0.8
@@ -444,8 +461,8 @@
                                 <div className="bg-white w-10 h-10 rounded-xl flex items-center justify-center shadow-sm">
                                     <i data-lucide="shield-check" className="text-slate-900 w-5"></i>
                                 </div>
-                                <h4 className="text-xs font-black uppercase tracking-wider">Seguridad y Pauta</h4>
-                                <p className="text-xs text-slate-600 leading-relaxed">
+                                <h4 className="text-xs font-black uppercase tracking-wider italic">Seguridad y Pauta</h4>
+                                <p className="text-xs text-slate-600 leading-relaxed font-medium">
                                     {results.maxCAC < (results.priceBeforeTax * 0.05)
                                         ? "Tu margen para adquirir clientes es muy bajo. Necesitas un ticket más alto para escalar con publicidad de forma segura."
                                         : `Puedes invertir hasta ${formatValue(results.maxCAC)} para conseguir un cliente y seguir siendo rentable.`}
